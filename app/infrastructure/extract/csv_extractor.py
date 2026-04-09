@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import Iterator
-from app.config.settings import settings  # Asumiendo que usas pydantic o similar
+from app.config import settings
 from app.infrastructure.logging.logger import logger
 
 class CSVExtractor:

@@ -22,15 +22,13 @@ class DeltaDetector:
         if not ids_to_check:
             return df.iloc[0:0]
 
-    
         sql = f"SELECT {key_column} FROM {table} WHERE {key_column} IN %s"
         
         try:
-          
-            conn = self.db.get_connection()
-            with conn.cursor() as cursor:
-                cursor.execute(sql, (ids_to_check,))
-                existing_ids: Set[str] = {str(row[0]) for row in cursor.fetchall()}
+            with self.db.get_connection() as conn:      
+                with conn.cursor() as cursor:
+                    cursor.execute(sql, (ids_to_check,))
+                    existing_ids: Set[str] = {str(row[0]) for row in cursor.fetchall()}
 
             new_df = df[~df[key_column].astype(str).isin(existing_ids)].copy()
 

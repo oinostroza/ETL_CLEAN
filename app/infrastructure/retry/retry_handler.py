@@ -1,6 +1,3 @@
-"""
-Sistema de reintentos con backoff exponencial.
-"""
 import time
 from typing import Callable, Any, TypeVar
 from functools import wraps

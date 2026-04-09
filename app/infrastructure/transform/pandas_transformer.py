@@ -32,7 +32,7 @@ class PandasTransformer:
 
         df = self._join_datasets(df)
         df = self._aggregate_features(df)
-
+        df = df.drop_duplicates(subset=['id_transaccion'])
         return df
 
     def _join_datasets(self, df: pd.DataFrame) -> pd.DataFrame:

@@ -1,5 +1,6 @@
 import sys
 import os
+from app.domain.services.reconciliation_service import ReconciliationService
 from app.infrastructure.extract.csv_extractor import CSVExtractor
 from app.infrastructure.load.parquet_loader import ParquetLoader
 from app.infrastructure.transform.pandas_transformer import PandasTransformer
@@ -31,12 +32,16 @@ def main():
         delta_detector = DeltaDetector()
         loader = PostgresLoader()
         file_loader = ParquetLoader(base_path="data/processed/transacciones_v1")
+        recon_service = ReconciliationService()
+
+
         pipeline = ETLPipeline(
             extractor=extractor,
             transformer=transformer,
             delta_detector=delta_detector,
             loader=loader,
-            file_loader=file_loader
+            file_loader=file_loader,
+            recon_service=recon_service
         )
 
         # 5. Ejecutar
