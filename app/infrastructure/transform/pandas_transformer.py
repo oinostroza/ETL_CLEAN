@@ -1,27 +1,53 @@
 import pandas as pd
-from typing import Dict, Any
+import numpy as np
+import re
 from app.infrastructure.logging.logger import logger
 
+class PandasTransformer:
+    def __init__(self, clientes_df: pd.DataFrame, productos_df: pd.DataFrame):
+        self.clientes = clientes_df
+        self.productos = productos_df
 
-def join_datasets(
-    transacciones: pd.DataFrame,
-    clientes: pd.DataFrame,
-    productos: pd.DataFrame
-) -> pd.DataFrame:
+    def _clean_monto(self, value):
+        if pd.isna(value) or value == "":
+            return np.nan
+        if isinstance(value, str):
+            value = value.replace('.', '').replace(',', '.')
+            value = re.sub(r'[^0-9.]', '', value)
+        try:
+            return float(value)
+        except ValueError:
+            return np.nan
 
-    logger.info("Realizando joins entre datasets")
-    df = transacciones.merge(clientes, on="cliente_id", how="left")
-    df = df.merge(productos, on="cliente_id", how="left")
-    return df
+    def transform(self, chunk_df: pd.DataFrame) -> pd.DataFrame:
 
+        df = chunk_df.copy()
+        df['monto'] = df['monto'].apply(self._clean_monto)
+        df['monto'] = df.groupby('cliente_id')['monto'].transform(
+            lambda x: x.fillna(x.mean() if not x.isnull().all() else 0)
+        )
 
-def aggregate_features(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Agrega features por cliente: gasto total, número de transacciones.
-    """
-    logger.info("Agregando features por cliente")
-    agg = df.groupby("cliente_id").agg(
-        gasto_total=("monto", "sum"),
-        num_transacciones=("id_transaccion", "count")
-    ).reset_index()
-    return df.merge(agg, on="cliente_id", how="left")
+        if 'canal' in df.columns:
+            df['canal'] = df['canal'].str.strip().str.upper()
+
+        df = self._join_datasets(df)
+        df = self._aggregate_features(df)
+
+        return df
+
+    def _join_datasets(self, df: pd.DataFrame) -> pd.DataFrame:
+        logger.info("Realizando joins enriquecidos")
+        df['cliente_id'] = pd.to_numeric(df['cliente_id'], errors='coerce')
+        
+        df = df.merge(self.clientes, on="cliente_id", how="left")
+        df = df.merge(self.productos, on="cliente_id", how="left")
+        return df
+
+    def _aggregate_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        logger.info("Calculando métricas de comportamiento")
+        agg = df.groupby("cliente_id").agg(
+            gasto_total=("monto", "sum"),
+            num_transacciones=("id_transaccion", "count")
+        ).reset_index()
+        
+        return df.merge(agg, on="cliente_id", how="left", suffixes=('', '_stats'))

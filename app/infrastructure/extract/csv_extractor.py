@@ -1,33 +1,41 @@
 import pandas as pd
-from typing import Iterator, Dict, Any
-from app.config.settings import config
+from typing import Iterator
+from app.config.settings import settings  # Asumiendo que usas pydantic o similar
 from app.infrastructure.logging.logger import logger
 
+class CSVExtractor:
+    def __init__(self, chunk_size: int = None):
+        self.chunk_size = chunk_size or getattr(settings, "CHUNK_SIZE", 100000)
 
-def extract_csv_in_chunks(
-    file_path: str,
-    chunk_size: int = None,
-    **read_csv_kwargs
-) -> Iterator[pd.DataFrame]:
-
-    chunk_size = chunk_size or config.chunk_size
-    logger.info(
-        "Extrayendo CSV por chunks",
-        file_path=file_path,
-        chunk_size=chunk_size,
-    )
-    try:
-        for chunk in pd.read_csv(file_path, chunksize=chunk_size, **read_csv_kwargs):
-            logger.info(
-                "Chunk extraído",
-                file_path=file_path,
-                rows=len(chunk),
-            )
-            yield chunk
-    except Exception as e:
-        logger.error(
-            "Error extrayendo CSV",
+    def extract(self, file_path: str, **kwargs) -> Iterator[pd.DataFrame]:
+  
+        logger.info(
+            "Iniciando extracción por chunks",
             file_path=file_path,
-            exception=e,
+            chunk_size=self.chunk_size
         )
-        raise
+
+        try:
+       
+            reader = pd.read_csv(
+                file_path, 
+                chunksize=self.chunk_size,
+                low_memory=False, 
+                engine='c',
+                **kwargs
+            )
+
+            for i, chunk in enumerate(reader):
+                logger.info(
+                    "Chunk cargado a memoria",
+                    index=i,
+                    rows=len(chunk)
+                )
+                yield chunk
+
+        except FileNotFoundError:
+            logger.error("Archivo no encontrado", file_path=file_path)
+            raise
+        except Exception as e:
+            logger.error("Error durante la iteración del CSV", exception=str(e))
+            raise

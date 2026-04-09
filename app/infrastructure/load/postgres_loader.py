@@ -1,41 +1,51 @@
+import io
 import pandas as pd
-from typing import List
 from app.infrastructure.db.connection import PostgresConnection
 from app.infrastructure.logging.logger import logger
 from app.infrastructure.retry.retry_handler import retry
 
+class PostgresLoader:
+    def __init__(self):
+        self.db = PostgresConnection()
 
-def upsert_to_postgres(
-    df: pd.DataFrame,
-    table: str,
-    unique_key: str = "id_transaccion",
-    chunk_size: int = 10000
-) -> int:
+    @retry(retries=3, delay=2)
+    def load(self, df: pd.DataFrame, table: str) -> int:
+  
+        if df.empty:
+            logger.info("DataFrame vacío, saltando carga", table=table)
+            return 0
 
-    conn = PostgresConnection()
-    inserted = 0
-    columns = list(df.columns)
-    placeholders = ",".join(["%s"] * len(columns))
-    update_stmt = ", ".join([f"{col}=EXCLUDED.{col}" for col in columns if col != unique_key])
-    insert_sql = f"""
-        INSERT INTO {table} ({', '.join(columns)})
-        VALUES ({placeholders})
-        ON CONFLICT ({unique_key}) DO UPDATE SET {update_stmt}
-    """
-    data = [tuple(row) for row in df.values]
-    for i in range(0, len(data), chunk_size):
-        batch = data[i:i+chunk_size]
+        buffer = io.StringIO()
+        df.to_csv(buffer, index=False, header=False, sep='|', na_rep='')
+        buffer.seek(0)
+
         try:
-            inserted += conn.execute_batch(insert_sql, batch)
+      
+            conn = self.db.get_connection()
+            with conn.cursor() as cursor:
+  
+                cursor.copy_from(
+                    file=buffer,
+                    table=table,
+                    sep='|',
+                    columns=list(df.columns),
+                    null=''
+                )
+                conn.commit()
+                
+            rows_loaded = len(df)
             logger.info(
-                "Batch insert exitoso",
+                "Carga masiva exitosa vía COPY",
                 table=table,
-                rows=len(batch),
+                rows=rows_loaded
             )
+            return rows_loaded
+
         except Exception as e:
             logger.error(
-                "Error en batch insert",
+                "Error crítico en carga masiva (COPY)",
                 table=table,
-                exception=e,
+                exception=str(e)
             )
-    return inserted
+         
+            raise e
