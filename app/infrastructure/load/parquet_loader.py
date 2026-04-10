@@ -16,7 +16,7 @@ class ParquetLoader:
 
         try:
             # Guardamos con compresión snappy (balance ideal entre velocidad y peso)
-            # df.to_parquet(file_path, engine='pyarrow', compression='snappy', index=False)
+            df.to_parquet(file_path, engine='pyarrow', compression='snappy', index=False)
             logger.info(f"💾 Chunk {chunk_index} respaldado en Parquet: {file_path}")
         except Exception as e:
             logger.error(f"Error guardando Parquet en bloque {chunk_index}: {e}")

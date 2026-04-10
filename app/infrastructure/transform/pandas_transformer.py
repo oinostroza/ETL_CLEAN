@@ -27,7 +27,6 @@ class PandasTransformer:
             lambda x: x.fillna(x.mean() if not x.isnull().all() else 0)
         )
         
-        df['id_transaccion'] = df['id_transaccion'].str.replace('TX-', '', regex=False)
         df['id_transaccion'] = pd.to_numeric(df['id_transaccion'], errors='coerce')
 
         if 'canal' in df.columns:

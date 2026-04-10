@@ -1,7 +1,9 @@
 import sys
 import os
 from app.domain.services.reconciliation_service import ReconciliationService
+from app.infrastructure.control.control_repository import ControlRepository
 from app.infrastructure.extract.csv_extractor import CSVExtractor
+from app.infrastructure.extract.parquet_extractor import ParquetExtractor
 from app.infrastructure.load.parquet_loader import ParquetLoader
 from app.infrastructure.transform.pandas_transformer import PandasTransformer
 from app.infrastructure.delta.delta_detector import DeltaDetector
@@ -28,25 +30,24 @@ def main():
         df_clientes = pd.read_csv(path_raw_clientes)
         df_productos = pd.read_csv(path_raw_productos)
 
-        extractor = CSVExtractor(chunk_size=300000) 
+        # extractor = CSVExtractor(chunk_size=300000) 
+        extractor = ParquetExtractor()
         transformer = PandasTransformer(df_clientes, df_productos)
-        delta_detector = DeltaDetector()
         loader = PostgresLoader()
-        file_loader = ParquetLoader(base_path="data/processed/transacciones_v1")
+        control_repo = ControlRepository()
         recon_service = ReconciliationService()
 
 
         pipeline = ETLPipeline(
             extractor=extractor,
             transformer=transformer,
-            delta_detector=delta_detector,
             loader=loader,
-            file_loader=file_loader,
-            recon_service=recon_service
+            recon_service=recon_service,
+            control_repo=control_repo
         )
 
         # 5. Ejecutar
-        pipeline.run(path_raw_tx)
+        pipeline.run()
         logger.info("🏁 Proceso ETL finalizado exitosamente.")
 
     except KeyboardInterrupt:
