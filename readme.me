@@ -1,0 +1,91 @@
+# 🚀 ETL Pipeline Escalable para Procesamiento Masivo de Datos
+
+## 📌 Descripción
+
+Este proyecto implementa un pipeline ETL batch diseñado para procesar grandes volúmenes de datos (50+ millones de registros) de manera eficiente, escalable y tolerante a fallos.
+
+El sistema aborda problemas típicos de procesamiento masivo, como:
+
+- degradación por consultas de duplicados  
+- uso intensivo de memoria  
+- tiempos elevados de reprocesamiento  
+- dificultad para escalar procesos  
+
+Para resolverlo, se diseñó una arquitectura basada en:
+
+- procesamiento por chunks  
+- almacenamiento intermedio en Parquet  
+- paralelismo mediante workers independientes  
+- idempotencia en la carga de datos  
+- control de estado persistente  
+
+---
+
+## 🧠 Arquitectura del sistema
+
+### 🔄 Flujo general
+
+CSV (fuente masiva)  
+↓  
+Ingesta → generación de archivos Parquet (capa RAW)  
+↓  
+Workers paralelos  
+↓  
+Transformaciones  
+↓  
+Base de datos PostgreSQL  
+
+---
+
+## 🧱 Componentes
+
+1. Capa de Ingesta  
+- Lectura de archivo CSV por chunks  
+- Conversión a formato Parquet sin transformación  
+
+2. Almacenamiento Intermedio (Parquet)  
+- Actúa como una capa tipo Data Lake local  
+- Permite reprocesamiento rápido  
+
+3. Workers de Procesamiento  
+- Múltiples procesos ejecutándose en paralelo  
+- Consumen archivos pendientes  
+
+4. Control de Estado  
+- tracking de chunks procesados  
+- estados: pending / processing / done  
+
+5. Transformaciones  
+- limpieza de datos  
+- interpolaciones  
+- cálculos de negocio  
+
+6. Carga (Load)  
+- inserción por batch  
+- idempotencia mediante ON CONFLICT DO NOTHING  
+
+---
+
+## 📊 Performance
+
+- Registros procesados: ~50,000,000  
+- Archivos Parquet generados: ~170  
+- Registros por chunk: ~300,000  
+
+Tiempo total estimado: ~30–40 minutos  
+
+---
+
+## 🚧 Roadmap
+
+- Control dinámico de paralelismo (CPU-based scaling)  
+- API REST con FastAPI  
+- Dockerización  
+- Orquestación (Airflow / cron)  
+- Validación de montos y precisión  
+
+---
+
+## 📌 Conclusión
+
+Pipeline ETL escalable con procesamiento incremental, paralelismo e idempotencia, preparado para evolucionar a entornos productivos.
