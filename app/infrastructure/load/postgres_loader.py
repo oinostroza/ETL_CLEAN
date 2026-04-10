@@ -31,8 +31,61 @@ class PostgresLoader:
 
         return result[0], float(result[1] or 0)
     
-    #@retry(retries=3, delay=2)
     def load(self, df: pd.DataFrame, table: str) -> int:
+        if df.empty:
+            return 0
+
+        try:
+            with self.db.get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(f"""
+                        SELECT column_name FROM information_schema.columns 
+                        WHERE table_name = '{table}'
+                    """)
+                    db_cols = [row[0] for row in cursor.fetchall()]
+
+                    cols_to_use = [c for c in df.columns if c in db_cols]         
+                    if not cols_to_use:
+                        logger.warning(f"⚠️ Ninguna columna coincide para la tabla {table}")
+                        return 0
+
+                    df_final = df[cols_to_use].copy()
+
+                    output = io.StringIO()
+                    df_final.to_csv(
+                        output, 
+                        sep='|', 
+                        header=False, 
+                        index=False, 
+                        na_rep='NULL'
+                    )
+                    output.seek(0)
+
+
+                    temp_table = f"temp_{table}_{int(pd.Timestamp.now().timestamp())}"
+                    cursor.execute(f"CREATE TEMP TABLE {temp_table} (LIKE {table} INCLUDING ALL)")            
+                    cursor.copy_from(output, 
+                                     temp_table, 
+                                     sep='|', 
+                                     columns=cols_to_use, 
+                                     null='NULL')
+
+                    insert_sql = f"""
+                        INSERT INTO {table} ({', '.join(cols_to_use)})
+                        SELECT {', '.join(cols_to_use)} FROM {temp_table}
+                        ON CONFLICT (id_transaccion) DO NOTHING;
+                    """
+                    cursor.execute(insert_sql)
+                    rows_inserted = cursor.rowcount
+                    conn.commit()
+
+            return rows_inserted
+
+        except Exception as e:
+            logger.error(f"❌ Error en carga: {str(e)}")
+            raise e
+    #@retry(retries=3, delay=2)
+    def load_old(self, df: pd.DataFrame, table: str) -> int:
         if df.empty:
             logger.info(f"DataFrame vacío para tabla {table}, saltando carga.")
             return 0

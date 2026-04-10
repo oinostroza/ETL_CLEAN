@@ -4,6 +4,8 @@ from app.config import settings
 from app.infrastructure.logging.logger import logger
 
 class CSVExtractor:
+
+  
     def __init__(self, chunk_size: int = None):
         self.chunk_size = chunk_size or getattr(settings, "CHUNK_SIZE", 100000)
 

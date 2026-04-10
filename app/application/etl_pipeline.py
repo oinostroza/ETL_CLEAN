@@ -1,6 +1,7 @@
 from app.infrastructure.logging.logger import logger
 
 class ETLPipeline:
+
     def __init__(self, 
                  extractor, 
                  transformer, 
@@ -60,9 +61,7 @@ class ETLPipeline:
                 transformed_df = self.transformer.transform(chunk)
 
                 new_records = self.delta.filter_new_records(
-                    df=transformed_df,
-                    table="transacciones",
-                    key_column="id_transaccion"
+                    df=transformed_df
                 )
 
                 if not new_records.empty:

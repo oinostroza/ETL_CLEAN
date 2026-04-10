@@ -10,6 +10,7 @@ from app.application.etl_pipeline import ETLPipeline
 from app.infrastructure.logging.logger import logger
 import pandas as pd
 
+
 def main():
     logger.info("🚀 Iniciando Proceso ETL de Alta Volumetría")
 
@@ -27,7 +28,7 @@ def main():
         df_clientes = pd.read_csv(path_raw_clientes)
         df_productos = pd.read_csv(path_raw_productos)
 
-        extractor = CSVExtractor(chunk_size=100000) 
+        extractor = CSVExtractor(chunk_size=300000) 
         transformer = PandasTransformer(df_clientes, df_productos)
         delta_detector = DeltaDetector()
         loader = PostgresLoader()

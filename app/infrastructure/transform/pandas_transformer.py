@@ -26,6 +26,9 @@ class PandasTransformer:
         df['monto'] = df.groupby('cliente_id')['monto'].transform(
             lambda x: x.fillna(x.mean() if not x.isnull().all() else 0)
         )
+        
+        df['id_transaccion'] = df['id_transaccion'].str.replace('TX-', '', regex=False)
+        df['id_transaccion'] = pd.to_numeric(df['id_transaccion'], errors='coerce')
 
         if 'canal' in df.columns:
             df['canal'] = df['canal'].str.strip().str.upper()
@@ -33,6 +36,8 @@ class PandasTransformer:
         df = self._join_datasets(df)
         df = self._aggregate_features(df)
         df = df.drop_duplicates(subset=['id_transaccion'])
+        df['ingreso_mensual'] = pd.to_numeric(df['ingreso_mensual'], errors='coerce')
+
         return df
 
     def _join_datasets(self, df: pd.DataFrame) -> pd.DataFrame:

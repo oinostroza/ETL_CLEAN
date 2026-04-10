@@ -7,7 +7,7 @@ class DeltaDetector:
     def __init__(self):
         self.db = PostgresConnection()
 
-    def filter_new_records(
+    def filter_new_records_old(
         self, 
         df: pd.DataFrame, 
         table: str, 
@@ -48,3 +48,8 @@ class DeltaDetector:
                 exception=str(e)
             )
             raise e
+    def filter_new_records(
+        self, 
+        df: pd.DataFrame    
+    ) -> pd.DataFrame:
+        return df
