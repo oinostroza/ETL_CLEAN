@@ -1,6 +1,6 @@
-# 🚀 ETL Pipeline Escalable para Procesamiento Masivo de Datos
+#ETL Pipeline Escalable para Procesamiento Masivo de Datos
 
-## 📌 Descripción
+##Descripción
 
 Este proyecto implementa un pipeline ETL batch diseñado para procesar grandes volúmenes de datos (50+ millones de registros) de manera eficiente, escalable y tolerante a fallos.
 
@@ -18,12 +18,14 @@ Para resolverlo, se diseñó una arquitectura basada en:
 - paralelismo mediante workers independientes  
 - idempotencia en la carga de datos  
 - control de estado persistente  
+- uso de pandas
+
 
 ---
 
-## 🧠 Arquitectura del sistema
+##Arquitectura del sistema
 
-### 🔄 Flujo general
+###Flujo general
 
 CSV (fuente masiva)  
 ↓  
@@ -37,7 +39,7 @@ Base de datos PostgreSQL
 
 ---
 
-## 🧱 Componentes
+## Componentes
 
 1. Capa de Ingesta  
 - Lectura de archivo CSV por chunks  
@@ -66,7 +68,7 @@ Base de datos PostgreSQL
 
 ---
 
-## 📊 Performance
+##Performance
 
 - Registros procesados: ~50,000,000  
 - Archivos Parquet generados: ~170  
@@ -82,10 +84,5 @@ Tiempo total estimado: ~30–40 minutos
 - API REST con FastAPI  
 - Dockerización  
 - Orquestación (Airflow / cron)  
-- Validación de montos y precisión  
+- Validación de montos
 
----
-
-## 📌 Conclusión
-
-Pipeline ETL escalable con procesamiento incremental, paralelismo e idempotencia, preparado para evolucionar a entornos productivos.
